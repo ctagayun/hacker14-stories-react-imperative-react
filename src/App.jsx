@@ -1,5 +1,25 @@
 /*================================================================
- Imperative React 
+ Imperative React
+       The changes in this code will enable us position the cursor 
+     in the search textbox. 
+
+       React is inherently declarative. When you implement JSX, you 
+     tell React what elements you want to see, not how to create 
+     these elements. But there are cases when you dont want everything
+     to be declarative. You want to tell react (imperative) how to 
+     do things. For example: 
+       - read/write access to elements via the DOM API:
+           - measuring (read) an element's width or height
+           - setting (write) an input field's focus state
+
+      - implementation of more complex animations:
+          - setting transitions
+          - orchestrating transitions
+
+      - integration of third-party libraries:
+          - D3 is a popular imperative chart library
+ 
+
      Review what is useState?
       - When a state gets mutated, the component with the state 
       and all child components will re-render.
@@ -16,27 +36,71 @@ import * as React from 'react';
   //to create it:
   //    1. useState
   //    2. useEffect 
+
   //So far this custom hook is just function around useState and useEffect.
   //What's missing is providing an initial state and returning the values
-  //that are needed by the App component as an array.
+  //as an array that are needed by the App component.
   
   //This is a custom hook that will store the state in a 
-  //local storage
+  //local storage. useStorageState which will keep the component's 
+  //state in sync with the browser's local storage.
+
+  /*This new custom hook allows us to use it the same way as React's 
+   built-in useState Hook. It returns:
+      1. state 
+      2. and a state updater function
+   and accepts an initial state as argument. 
+  */
+    
   const useStorageState = (key, initialState) => {
+     //using the the parameter 'key'. it goes to the local storage
+     //to fetch the state if not found uses 'initialState' param and 
+     //assigns it to "value" otherwise the state fetched from
+     //local storage will be used and assigned to 'value
+     //   Note: 1. value is the generic name for state
+     //         2. setValue is the name of the function that will 
+     //            update the 'value'
+     //This code here: 
+     //   React.useState(
+     //    localStorage.getItem('key') || initialState
+     //is simply a logic to determine what state to use.
+ 
+     //Note: to make it generic an resusable change 'search' to 'value'
+     // localStorage.getItem('search') || initialState  
+     //and change "setSearhTerm" to 'setValue' and 'searchTerm' to 'value'
+   
      const [value, setValue] = React.useState(
         localStorage.getItem('key') || initialState 
      );
 
-  //What does useEffect do? by using this hook you tell React that 
-  //your component needs to do something after a render.
+    //What does useEffect do? by using this hook you tell React that 
+    //your component needs to do something after a render.
+    //useEffect is a Hook, so you can only call it at the top level 
+    //of your component or your own Hooks. You can’t call it inside 
+    //loops or conditions. 
+    //https://react.dev/reference/react/useEffect#useeffect
+   
   React.useEffect(() => {
          console.log('useEffect fired. Displaying value of dependency array ' +
             [value, key]  );
-         localStorage.setItem(key, value);  //Param 1 of useEffect - a function
+
+         /* The following code is the first parameter of useEffect - a function.
+            This function looks for an item in the localStorage using "key".
+            Key is a generic it contains the value "search" of 'search/value' 
+            and set 'value' to 'searchTerm' which is the state 
+         */
+         localStorage.setItem(key, value); 
         },
-        [value, key]  //Param 2 - dependency array
+        [value, key]  //The second parameter of useEffect is a - dependency array
+                      //[value]); <-- React.useEffect is triggered when 
+                      //when this dependency variable changes. In our
+                      //case when a user types into the HTML input field)
         ); //EOF useEffect
     
+     //the returned values are returned as an array.
+     //to make it generic change [searchTerm, setSearchTerm] to [value , setValue]
+     //Again: searchTerm is the state. setSearchTerm is the state updater
+     //function.
      return [value, setValue]; 
 
   } //EOF create custom hook
@@ -61,11 +125,11 @@ import * as React from 'react';
           objectID: 1,
         },
        ]
-      //access the localstorage hook to assign value to 
+      //Call custom useStorageState hook to assign value to 
       //searchTerm, setSearchTerm
       const [searchTerm, setSearchTerm] =  useStorageState (
-        'search',
-        'React'
+        'search', //key
+        'React',  //Initial state
         );
       console.log('Value assigned to search term is = ' + searchTerm); 
       console.log('Value assigned tosetSearchTerm is = ' + setSearchTerm); 
@@ -97,7 +161,8 @@ import * as React from 'react';
              id="search"
              //label="Search:"
              value={searchTerm} //assign name of stateful value created by call to useState() hook
-             isFocused
+             isFocused //pass imperatively a dedicated  prop. 
+                       //isFocused as an attribute is equivalent to isFocused={true}
              onInputChange={handleSearch} //assign name of callback handler
              //text = note we are not passing 'text' prop. Every time the InputWithLabel 
              //component is used without a type prop, the default type will be "text".
@@ -161,37 +226,37 @@ import * as React from 'react';
     opening and </InputWithLabel> closing tag. In this case "Search:"
     that we inserted. */
 
-      const InputWithLabel = ({
-        id,
+    const InputWithLabel = ({
+       id,
        // label,
-        value,  //this prop was assigned {searchTerm}
-        type = 'text',
-        onInputChange, //this prop was assigned {handleSearch} the callback
-        isFocused,
-        children,
+       value,  //this prop was assigned {searchTerm}
+       type = 'text',
+       onInputChange, //this prop was assigned {handleSearch} the callback
+       isFocused,
+       children,
       }) => { 
         const inputRef = React.useRef();
 
-  React.useEffect(() => {
-    if (isFocused && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [isFocused]);
+        React.useEffect(() => {
+          if (isFocused && inputRef.current) {
+            inputRef.current.focus();
+          }
+        }, [isFocused]);
 
-  return (
-    <>
-      <label htmlFor={id}>{children}</label>
-      &nbsp;
-      <input
-        ref={inputRef}
-        id={id}
-        type={type}
-        value={value}
-        onChange={onInputChange}
-      />
-    </>
-  );
-};
+        return (
+          <>
+            <label htmlFor={id}>{children}</label>
+            &nbsp;
+            <input
+              ref={inputRef}
+              id={id}
+              type={type}
+              value={value}
+              onChange={onInputChange}
+            />
+          </>
+        );
+    };
      
     
    const List = ({list}) => (  //<-- destructure objects in the function signature.
